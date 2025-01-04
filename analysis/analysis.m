@@ -11,7 +11,7 @@ rb = 0.015;                     % radius of the ball (m)
 
 %% Model
 s = tf('s');
-P = - m*g / ((m + Ib/rb^2) * s^2);   % X(s)/Theta(s), plant TF
+P = - m*g / ((m + Ib/rb^2) * s^2);            % X(s)/Theta(s), plant TF
 
 %% Analysis
 figure(1);
@@ -21,14 +21,14 @@ pzplot(P)
 %% Control (PID)
 
 % pidTuner(P);
-Kp = -0.032628;
-Ki = -0.0018881;
-Kd = -0.14096;
+Kp = -0.01;
+Ki = 0;
+Kd = -1;
 C = pid(Kp, Ki, Kd);                % controller
 G = feedback(C*P, 1);               % X(s)/R(s), closed loop TF
 
 t = 0:0.01:10;                      % 1 sec
-step_amplitude = 0.01;              % 1 cm
+step_amplitude = 0.05;              % 1 cm
 step(step_amplitude*G, t)
 
 %% Testing
@@ -76,7 +76,5 @@ grid on; % Add grid lines
 
 %% Scratchpad
 
-pzmap(G)
-% pidTuner(P)
-
-200/60*2*3.14
+% pzmap(G)
+pidTuner(P)
