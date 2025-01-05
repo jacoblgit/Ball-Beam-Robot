@@ -22,14 +22,14 @@ pzplot(P)
 %% Control (PID)
 
 % pidTuner(P);
-Kp = -0.01;
+Kp = -0.147;
 Ki = 0;
-Kd = -1;
+Kd = -0.309;
 C = pid(Kp, Ki, Kd);                % controller
 G = feedback(C*P, 1);               % X(s)/R(s), closed loop TF
 
 t = 0:0.01:10;                      % 1 sec
-step_amplitude = 0.05;              % 1 cm
+step_amplitude = 0.10;              % 1 cm
 step(step_amplitude*G, t)
 
 %% Testing
@@ -78,4 +78,4 @@ grid on; % Add grid lines
 %% Scratchpad
 
 % pzmap(G)
-pidTuner(P)
+% pidTuner(P)
