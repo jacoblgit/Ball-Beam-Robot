@@ -7,6 +7,7 @@ g = 9.8;                        % gravitational acceleration (m/s^2)
 
 m = 0.01838;                    % mass of ball (kg)
 Ib = 1.654 * 10^-6;             % moment of inertia of ball (kg*m^2)
+Ip = 1.8 * 10^-4;               % moment of inertia of track (kg*m^2)
 rb = 0.015;                     % radius of the ball (m)
 
 %% Model
