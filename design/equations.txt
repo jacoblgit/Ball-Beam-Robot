@@ -1,4 +1,4 @@
-﻿"ball_diameter"= 3cm
+﻿"ball_diameter"= 0.75in
 "wall_thickness" = 0.25cm
 "track_length" = 25cm
 "axle" = 5mm
