@@ -9,10 +9,5 @@ void Stepper::set_direction(Direction direction) { direction_ = direction; }
 void Stepper::reset_step_count() { step_count_ = 0; }
 uint32_t Stepper::get_step_count() const { return step_count_; }
 
-// void Stepper::start_stepping() 
-
-
-
-
-
-    
+void Stepper::start_stepping() { /* Implement Later */}
+void Stepper::stop_stepping() { /* Implement Later */}
