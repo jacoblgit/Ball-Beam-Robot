@@ -22,6 +22,7 @@ class Stepper {
         uint32_t steps_per_sec_;
         Direction direction_;
         uint32_t step_count_;
+        friend void TC3_Handler();
 };
 
 #endif
