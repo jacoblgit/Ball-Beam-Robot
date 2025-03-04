@@ -11,22 +11,22 @@ public:
     float compute(float current_position, float target_position);
     
     // Setters for gains
-    void set_p_gain(float kp);
-    void set_i_gain(float ki);
-    void set_d_gain(float kd);
+    void set_p_gain(float kp) { kp_ = kp; }
+    void set_i_gain(float ki) { ki_ = ki; }
+    void set_d_gain(float kd) { kd_ = kd; }
 
 private:
-    const uint32_t loop_period_ms_;
+    const float loop_period_s_;  // Period in seconds
     
     // Control gains
-    float kp_ = 1.0f;
-    float ki_ = 0.0f;
-    float kd_ = 0.0f;
+    float kp_;
+    float ki_;
+    float kd_;
     
     // State for I and D terms
-    float integral_ = 0.0f;
-    float prev_error_ = 0.0f;
-    bool first_sample_ = true;
+    float integral_;
+    float prev_error_;
+    bool first_sample_;
 };
 
 #endif // CONTROLLER_HPP

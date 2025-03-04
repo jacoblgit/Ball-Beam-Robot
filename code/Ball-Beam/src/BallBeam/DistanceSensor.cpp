@@ -1,4 +1,4 @@
-#include <DistanceSensor.hpp>
+#include "DistanceSensor.hpp"
 
 DistanceSensor::DistanceSensor(TwoWire* i2c_bus, uint8_t xshut_pin, uint32_t loop_period_ms)
     : pin_(xshut_pin), sensor_(nullptr), is_initialized_(false) {

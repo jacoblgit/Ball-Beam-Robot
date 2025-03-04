@@ -1,8 +1,9 @@
 #include <Arduino.h>    // Arduino Core
 #include <Eventually.h> // Event Driven Framework
-#include <Stepper.hpp>
-#include <DistanceSensor.hpp>
-#include <Controller.hpp>
+#include <Wire.h>       // I2C communication
+#include "BallBeam/Controller.hpp"
+#include "BallBeam/DistanceSensor.hpp"
+#include "BallBeam/Stepper.hpp"
 
 // Pin Definitions
 const uint8_t LEFT_BUTTON_PIN = 2;  
@@ -12,7 +13,7 @@ const uint8_t LEFT_LIMIT_PIN = 5;
 const uint8_t RIGHT_LIMIT_PIN = 6;
 const uint8_t STEPPER_STEP_PIN = 7;
 const uint8_t STEPPER_DIR_PIN = 8;
-const uint8_t DISTANCE_SENSOR_PIN = A0;
+const uint8_t DISTANCE_SENSOR_XSHUT_PIN = A1;
 
 // Constants
 const uint32_t LOOP_PERIOD_MS = 100;
@@ -27,9 +28,9 @@ enum TargetPosition {
 };
 
 const float TARGET_POSITIONS[] = {
-    -50.0f,  // LEFT position in cm
+    -5.0f,  // LEFT position in cm
     0.0f,    // CENTER position in cm
-    50.0f    // RIGHT position in cm
+    5.0f    // RIGHT position in cm
 };
 
 // Function Declarations
@@ -43,7 +44,7 @@ bool handleRightLimit(EvtListener* listener, EvtContext* ctx);
 
 // Global Components
 Stepper stepper(STEPPER_STEP_PIN, STEPPER_DIR_PIN, STEPS_PER_REV);
-DistanceSensor distanceSensor(DISTANCE_SENSOR_PIN);
+DistanceSensor distanceSensor(&Wire, DISTANCE_SENSOR_XSHUT_PIN, LOOP_PERIOD_MS);
 Controller controller(LOOP_PERIOD_MS);
 EvtManager mgr;
 
