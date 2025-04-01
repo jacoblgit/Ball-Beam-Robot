@@ -11,9 +11,9 @@ public:
     float compute(float current_position, float target_position);
     
     // Setters for gains
-    void set_p_gain(float kp) { kp_ = kp; }
-    void set_i_gain(float ki) { ki_ = ki; }
-    void set_d_gain(float kd) { kd_ = kd; }
+    void set_p_gain(float kp);
+    void set_i_gain(float ki);
+    void set_d_gain(float kd);
 
 private:
     const float loop_period_s_;  // Period in seconds

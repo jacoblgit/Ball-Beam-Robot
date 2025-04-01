@@ -20,23 +20,32 @@ void Stepper::start_stepping() {
   digitalWrite(dir_pin_, direction_ == Direction::CW ? HIGH : LOW);
   
   // Validate stepping rate before proceeding
-  if (steps_per_sec_ == 0) {
-      return;
+  // steps_per_sec_ must be greater than 3 to avoid overflow in the calculation
+  if (steps_per_sec_ < 3) {
+    return;
   }
   
-  // Configure TC3 timer for step pulse generation
-  
+  // Enable GCLK for TC3
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN |     // Enable clock
+  GCLK_CLKCTRL_GEN_GCLK0 | // Use GCLK0 (48MHz)
+  GCLK_CLKCTRL_ID_TCC2_TC3; // Select TC3
+  while (GCLK->STATUS.bit.SYNCBUSY);  // Wait for sync
+
   // Disable timer for configuration
   TC3->COUNT16.CTRLA.bit.ENABLE = 0;
   while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
   
+  // Reset TC3
+  TC3->COUNT16.CTRLA.bit.SWRST = 1;  // Software reset
+  while (TC3->COUNT16.CTRLA.bit.SWRST); // Wait for reset to complete
+  
   // Configure timer: 16-bit mode, match frequency waveform generation, 8x prescaler
-  TC3->COUNT16.CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_WAVEGEN_MFRQ | TC_CTRLA_PRESCALER_DIV8;
+  TC3->COUNT16.CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_WAVEGEN_MFRQ | TC_CTRLA_PRESCALER_DIV256;
   while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
   
   // Calculate and set period based on requested step frequency
-  // SystemCoreClock/8 gives timer tick frequency in Hz
-  TC3->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / 8 / steps_per_sec_ - 1);
+  // SystemCoreClock/256 gives timer tick frequency in Hz
+  TC3->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / 256 / steps_per_sec_ - 1);
   while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
   
   // Configure interrupt with high priority
@@ -63,6 +72,7 @@ void Stepper::stop_stepping() {
 }
 
 void TC3_Handler() {
+  Serial.println("TC3_Handler called");
   // Verify and clear Match Counter 0 interrupt flag
   if (TC3->COUNT16.INTFLAG.bit.MC0) {
       TC3->COUNT16.INTFLAG.bit.MC0 = 1;
@@ -71,7 +81,7 @@ void TC3_Handler() {
       if (g_stepper_p) {
           // Generate step pulse - HIGH
           digitalWrite(g_stepper_p->step_pin_, HIGH);
-          
+
           // Maintain minimum pulse width (7 cycles ≈ 146ns @ 48MHz)
           asm volatile (
               "nop\n\t"
@@ -85,7 +95,7 @@ void TC3_Handler() {
           
           // Complete step pulse - LOW
           digitalWrite(g_stepper_p->step_pin_, LOW);
-          
+
           // Update position counter according to direction
           if (g_stepper_p->direction_ == Direction::CW) {
               g_stepper_p->step_count_++;

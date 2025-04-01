@@ -11,13 +11,13 @@ const uint8_t CENTER_BUTTON_PIN = 3;
 const uint8_t RIGHT_BUTTON_PIN = 4;
 const uint8_t LEFT_LIMIT_PIN = 5;
 const uint8_t RIGHT_LIMIT_PIN = 6;
-const uint8_t STEPPER_STEP_PIN = 7;
-const uint8_t STEPPER_DIR_PIN = 8;
+const uint8_t STEPPER_STEP_PIN = 8;
+const uint8_t STEPPER_DIR_PIN = 9;
 const uint8_t DISTANCE_SENSOR_XSHUT_PIN = A1;
 
 // Constants
 const uint32_t LOOP_PERIOD_MS = 100;
-const uint16_t STEPS_PER_REV = 200; 
+const uint16_t STEPS_PER_REV = 1600; 
 const uint32_t DEBOUNCE_MS = 40;
 
 // Target position enum and mapping to actual positions
@@ -103,16 +103,34 @@ bool handleRightLimit(EvtListener* listener, EvtContext* ctx) {
     return true;
 }
 
-void setup() {
-    pin_setup();
-    mgr.addListener(&timer);
-    mgr.addListener(&leftBtn);
-    mgr.addListener(&centerBtn);
-    mgr.addListener(&rightBtn);
-    mgr.addListener(&leftLimit);
-    mgr.addListener(&rightLimit);
-}
+// void setup() {
+//     Serial.begin(9600);
+//     pin_setup();
 
-void loop() {
-    mgr.loopIteration();
-}
+//     stepper.set_direction(Direction::CW); // Set initial direction
+//     stepper.set_steps_per_sec(STEPS_PER_REV); // Set initial speed
+//     stepper.start_stepping(); // Start stepping
+// }
+
+// void loop() {
+//     delay(1000);
+//     stepper.set_direction(Direction::CW); // Change direction to CW
+//     stepper.start_stepping(); // Start stepping
+//     delay(1000);
+//     stepper.set_direction(Direction::CCW); // Change direction to CCW
+//     stepper.start_stepping(); // Start stepping
+// }
+
+// void setup() {
+//     pin_setup();
+//     mgr.addListener(&timer);
+//     mgr.addListener(&leftBtn);
+//     mgr.addListener(&centerBtn);
+//     mgr.addListener(&rightBtn);
+//     mgr.addListener(&leftLimit);
+//     mgr.addListener(&rightLimit);
+// }
+
+// void loop() {
+//     mgr.loopIteration();
+// }
