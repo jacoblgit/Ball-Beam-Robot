@@ -8,7 +8,7 @@
 class DistanceSensor {
 public:
     // Constructor with custom I2C, XSHUT pin, and loop period
-    DistanceSensor(TwoWire* i2c_bus, uint8_t xshut_pin, uint32_t loop_period_ms);
+    DistanceSensor(uint8_t xshut_pin, uint32_t loop_period_ms);
     
     // Destructor to clean up resources
     ~DistanceSensor();
@@ -16,6 +16,9 @@ public:
     // Get distance in cm
     // Returns -1.0f if reading is invalid
     float get_distance();
+
+    int getDiagnosticCode();
+    void initialize();
 
 private:
     const uint8_t pin_;             // XSHUT pin number

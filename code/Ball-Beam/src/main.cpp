@@ -1,9 +1,29 @@
 #include <Arduino.h>    // Arduino Core
 #include <Eventually.h> // Event Driven Framework
-#include <Wire.h>       // I2C communication
+// #include <Wire.h>       // I2C communication
 #include "BallBeam/Controller.hpp"
 #include "BallBeam/DistanceSensor.hpp"
 #include "BallBeam/Stepper.hpp"
+#include "BallBeam/Test.hpp"
+
+// **********************************************************************
+// // distance sensor
+// #include <Arduino.h>
+// #include <Wire.h>
+// #include <vl53l4cd_class.h>
+// #include <string.h>
+// #include <stdlib.h>
+// #include <stdio.h>
+// #include <stdint.h>
+// #include <assert.h>
+// #include <stdlib.h>
+
+// #define DEV_I2C Wire
+// #define SerialPort Serial
+
+// VL53L4CD sensor_vl53l4cd_sat(&DEV_I2C, A1);
+
+// **********************************************************************
 
 // Pin Definitions
 const uint8_t LEFT_BUTTON_PIN = 2;  
@@ -16,7 +36,7 @@ const uint8_t STEPPER_DIR_PIN = 9;
 const uint8_t DISTANCE_SENSOR_XSHUT_PIN = A1;
 
 // Constants
-const uint32_t LOOP_PERIOD_MS = 100;
+const uint32_t LOOP_PERIOD_MS = 250;
 const uint16_t STEPS_PER_REV = 1600; 
 const uint32_t DEBOUNCE_MS = 40;
 
@@ -44,7 +64,7 @@ bool handleRightLimit(EvtListener* listener, EvtContext* ctx);
 
 // Global Components
 Stepper stepper(STEPPER_STEP_PIN, STEPPER_DIR_PIN, STEPS_PER_REV);
-DistanceSensor distanceSensor(&Wire, DISTANCE_SENSOR_XSHUT_PIN, LOOP_PERIOD_MS);
+DistanceSensor distanceSensor(DISTANCE_SENSOR_XSHUT_PIN, LOOP_PERIOD_MS); // uses I2C
 Controller controller(LOOP_PERIOD_MS);
 EvtManager mgr;
 
@@ -103,23 +123,82 @@ bool handleRightLimit(EvtListener* listener, EvtContext* ctx) {
     return true;
 }
 
-// void setup() {
-//     Serial.begin(9600);
-//     pin_setup();
+void setup() {
+    Serial.begin(115200); 
+    while(!Serial) {
+        ; // Wait for serial port to connect. Needed for native USB port only
+    }
 
-//     stepper.set_direction(Direction::CW); // Set initial direction
-//     stepper.set_steps_per_sec(STEPS_PER_REV); // Set initial speed
-//     stepper.start_stepping(); // Start stepping
-// }
+    distanceSensor.initialize(); // Initialize the distance sensor
 
-// void loop() {
-//     delay(1000);
-//     stepper.set_direction(Direction::CW); // Change direction to CW
-//     stepper.start_stepping(); // Start stepping
-//     delay(1000);
-//     stepper.set_direction(Direction::CCW); // Change direction to CCW
-//     stepper.start_stepping(); // Start stepping
-// }
+    Serial.println("hello world");
+
+    // // Initialize I2C bus.
+    // DEV_I2C.begin();
+
+    // // Configure VL53L4CD satellite component.
+    // sensor_vl53l4cd_sat.begin();
+
+    // // Switch off VL53L4CD satellite component.
+    // sensor_vl53l4cd_sat.VL53L4CD_Off();
+
+    // //Initialize VL53L4CD satellite component.
+    // sensor_vl53l4cd_sat.InitSensor();
+
+    // // Program the highest possible TimingBudget, without enabling the
+    // // low power mode. This should give the best accuracy
+    // sensor_vl53l4cd_sat.VL53L4CD_SetRangeTiming(200, 0);
+
+    // // Start Measurements
+    // sensor_vl53l4cd_sat.VL53L4CD_StartRanging();
+
+    //     // Initialize serial for output.
+    // SerialPort.begin(115200);
+    // SerialPort.println("Starting...");
+
+    // Serial.println(distanceSensor.getDiagnosticCode());
+    // pin_setup();
+    // Test::test_stepper(stepper, STEPS_PER_REV); // Test the stepper motor
+}
+
+void loop() {
+
+    // uint8_t NewDataReady = 0;
+    // VL53L4CD_Result_t results;
+    // uint8_t status;
+    // char report[64];
+  
+    // do {
+    //   status = sensor_vl53l4cd_sat.VL53L4CD_CheckForDataReady(&NewDataReady);
+    // } while (!NewDataReady);
+    
+    // if ((!status) && (NewDataReady != 0)) {
+    //   // (Mandatory) Clear HW interrupt to restart measurements
+    //   sensor_vl53l4cd_sat.VL53L4CD_ClearInterrupt();
+  
+    //   // Read measured distance. RangeStatus = 0 means valid data
+    //   sensor_vl53l4cd_sat.VL53L4CD_GetResult(&results);
+    //   snprintf(report, sizeof(report), "Status = %3u, Distance = %5u mm, Signal = %6u kcps/spad\r\n",
+    //            results.range_status,
+    //            results.distance_mm,
+    //            results.signal_per_spad_kcps);
+    //   SerialPort.print(report);
+    // }
+  
+    
+    
+    // print sensor value
+    float distance = distanceSensor.get_distance();
+    // Serial.println(distance);
+    if (distance >= 0) {
+        Serial.print("Distance: ");
+        Serial.print(distance);
+        Serial.println(" cm");
+    } else {
+        Serial.println("Invalid distance reading");
+    }
+    delay(250); // Simulate loop period
+}
 
 // void setup() {
 //     pin_setup();

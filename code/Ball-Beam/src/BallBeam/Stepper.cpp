@@ -72,7 +72,6 @@ void Stepper::stop_stepping() {
 }
 
 void TC3_Handler() {
-  Serial.println("TC3_Handler called");
   // Verify and clear Match Counter 0 interrupt flag
   if (TC3->COUNT16.INTFLAG.bit.MC0) {
       TC3->COUNT16.INTFLAG.bit.MC0 = 1;
