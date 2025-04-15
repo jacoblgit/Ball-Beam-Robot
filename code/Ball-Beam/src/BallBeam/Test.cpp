@@ -41,4 +41,20 @@ namespace Test {
         
         Serial.println("Stepper motor test complete.");
     }
+
+    void test_distance_sensor(DistanceSensor& sensor, uint32_t LOOP_PERIOD_MS) {        
+        // Initialize the sensor
+        sensor.initialize();
+        
+        // print sensor value
+        float distance = sensor.get_distance();
+        if (distance >= 0) {
+            Serial.print("Distance: ");
+            Serial.print(distance);
+            Serial.println(" mm");
+        } else {
+            Serial.println("Invalid distance reading");
+        }
+        delay(LOOP_PERIOD_MS);
+    }
 }
