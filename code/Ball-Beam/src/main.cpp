@@ -14,6 +14,7 @@ const uint8_t RIGHT_LIMIT_PIN = 6;
 const uint8_t STEPPER_STEP_PIN = 8;
 const uint8_t STEPPER_DIR_PIN = 9;
 const uint8_t DISTANCE_SENSOR_XSHUT_PIN = A1;
+const uint8_t POTENTIOMETER_PIN = A7;           // for testing
 
 // Constants
 const uint32_t LOOP_PERIOD_MS = 100;
@@ -28,9 +29,9 @@ enum TargetPosition {
 };
 
 const float TARGET_POSITIONS[] = {
-    -5.0f,  // LEFT position in cm
-    0.0f,    // CENTER position in cm
-    5.0f    // RIGHT position in cm
+    50.0f,  // LEFT position in mm
+    125.0f,    // CENTER position in mm
+    200.0f    // RIGHT position in mm
 };
 
 // Function Declarations
@@ -49,7 +50,11 @@ Controller controller(LOOP_PERIOD_MS);
 EvtManager mgr;
 
 // Global State
-TargetPosition currentTarget = CENTER;
+// TargetPosition currentTarget = CENTER;
+TargetPosition currentTarget = LEFT; // for testing
+
+float prev_pos = 0.0f;
+float buffer[5] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // for testing
 
 // Global Event Listeners
 EvtTimeListener timer(LOOP_PERIOD_MS, true, handleTimer);
@@ -68,13 +73,39 @@ void pin_setup() {
     pinMode(RIGHT_LIMIT_PIN, INPUT_PULLUP);
     pinMode(STEPPER_STEP_PIN, OUTPUT);
     pinMode(STEPPER_DIR_PIN, OUTPUT);
+    pinMode(POTENTIOMETER_PIN, INPUT); 
 }
 
 bool handleTimer(EvtListener* listener, EvtContext* ctx) {
+
     float position = distanceSensor.get_distance();
+    // Serial.println(position); // for testing
+    float filtered_pos = position; // for testing
+    // float filtered_pos = (position + prev_pos) / 2.0f; 
+    // prev_pos = position;
+    // Serial.println(filtered_pos);
+
     float targetPosition = TARGET_POSITIONS[currentTarget];
-    float control = controller.compute(position, targetPosition);
-    stepper.set_steps_per_sec(control);  // Assuming control output maps to steps/sec
+    float error = targetPosition - filtered_pos;
+    Serial.print("Error: ");
+    Serial.println(error);
+
+    float kp = 0.05; // Proportional gain
+    float target_angle_deg = kp * error; // for testing
+    float target_angle_steps = target_angle_deg * STEPS_PER_REV / 360.0f;
+    float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
+    float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
+    // float target_steps_per_sec = kp * error; // for testing
+    // Serial.print("Target Steps/sec: ");
+    // Serial.println(target_steps_per_sec);
+    // float target_angle_deg = controller.compute(filtered_pos, targetPosition);
+    // float target_angle_steps = target_angle_deg * STEPS_PER_REV / 360.0f;
+    // float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
+    // float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
+    
+    stepper.set_steps_per_sec(target_steps_per_sec);
+    stepper.start_stepping();
+    
     return true;
 }
 
@@ -103,32 +134,41 @@ bool handleRightLimit(EvtListener* listener, EvtContext* ctx) {
     return true;
 }
 
+// *************************************
+// * For Testing Purposes Only *
+// *************************************
+// void setup() {
+//     Serial.begin(115200); 
+//     while(!Serial) {
+//         ; // Wait for serial port to connect. Needed for native USB port only
+//     }
+
+//     Serial.println("hello world");
+// }
+
+// void loop() {
+//     // Test::test_distance_sensor(distanceSensor, LOOP_PERIOD_MS);
+//     Test::test_stepper(stepper, STEPS_PER_REV);
+//     delay(10);
+// }
+// *************************************
+
 void setup() {
     Serial.begin(115200); 
     while(!Serial) {
         ; // Wait for serial port to connect. Needed for native USB port only
     }
-
     Serial.println("hello world");
+    pin_setup();
+    distanceSensor.initialize(); // Initialize the distance sensor (maybe put in check on distance sensor first measurement)
+    mgr.addListener(&timer);
+    mgr.addListener(&leftBtn);
+    mgr.addListener(&centerBtn);
+    mgr.addListener(&rightBtn);
+    mgr.addListener(&leftLimit);
+    mgr.addListener(&rightLimit);
 }
 
 void loop() {
-    Test::test_distance_sensor(distanceSensor, LOOP_PERIOD_MS);
-    // Test::test_stepper(stepper, STEPS_PER_REV);
-    delay(10);
+    mgr.loopIteration();
 }
-
-// void setup() {
-//     pin_setup();
-//     distanceSensor.initialize(); // Initialize the distance sensor
-//     mgr.addListener(&timer);
-//     mgr.addListener(&leftBtn);
-//     mgr.addListener(&centerBtn);
-//     mgr.addListener(&rightBtn);
-//     mgr.addListener(&leftLimit);
-//     mgr.addListener(&rightLimit);
-// }
-
-// void loop() {
-//     mgr.loopIteration();
-// }

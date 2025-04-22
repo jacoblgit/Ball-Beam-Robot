@@ -3,15 +3,18 @@
 
 #include <Arduino.h>
 
+// 10000 steps/sec is 375 RPM at 1600 steps/rev
+const uint32_t MAX_STEPS_PER_SEC = 10000;
+
 enum class Direction { CW, CCW };
 
 class Stepper {
     public:
         Stepper(uint8_t step_pin, uint8_t dir_pin, uint16_t steps_per_rev);
-        void set_steps_per_sec(uint32_t steps_per_sec);
+        void set_steps_per_sec(int32_t steps_per_sec);
         void set_direction(Direction direction);
         void reset_step_count();
-        uint32_t get_step_count() const;
+        int32_t get_step_count() const;
         void start_stepping();
         void stop_stepping();
 
@@ -21,7 +24,7 @@ class Stepper {
         const uint16_t steps_per_rev_;
         uint32_t steps_per_sec_;
         Direction direction_;
-        uint32_t step_count_;
+        int32_t step_count_;
         friend void TC3_Handler();
 };
 

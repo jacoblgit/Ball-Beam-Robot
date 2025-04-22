@@ -6,6 +6,8 @@ DistanceSensor::DistanceSensor(uint8_t xshut_pin, uint32_t loop_period_ms)
     : pin_(xshut_pin), sensor_(nullptr), is_initialized_(false),
     timing_budget_(0.8 * loop_period_ms) {
 
+    // note: timing budget in ms must be > 10ms and < 200ms
+        
     sensor_ = new VL53L4CD(&DEV_I2C, xshut_pin);
 }
 
@@ -72,6 +74,5 @@ float DistanceSensor::get_distance() {
         return -4.0f;
     }
     
-    // Convert from mm to cm and return
     return results.distance_mm;
 }

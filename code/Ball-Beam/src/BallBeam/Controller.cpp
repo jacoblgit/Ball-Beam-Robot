@@ -2,7 +2,7 @@
 
 Controller::Controller(uint32_t loop_period_ms)
     : loop_period_s_(loop_period_ms / 1000.0f),
-      kp_(1.0f),
+      kp_(0.5f),
       ki_(0.0f),
       kd_(0.0f),
       integral_(0.0f),
@@ -34,8 +34,18 @@ float Controller::compute(float current_position, float target_position) {
     // Store current error for next derivative calculation
     prev_error_ = error;
     
+    Serial.print("P Term: ");
+    Serial.print(p_term);
+    Serial.print(" I Term: ");
+    Serial.print(i_term);
+    Serial.print(" D Term: ");
+    Serial.print(d_term);
+    Serial.print(" total: ");
+    Serial.println(p_term + i_term + d_term);
+
     // Combine P, I, and D terms for final control output
-    return p_term + i_term + d_term;
+    float control = p_term + i_term + d_term;
+    return control;
 }
 
 void Controller::set_p_gain(float kp) { kp_ = kp; }

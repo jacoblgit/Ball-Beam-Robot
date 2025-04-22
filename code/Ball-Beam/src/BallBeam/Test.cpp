@@ -13,7 +13,7 @@ namespace Test {
         
         // Set direction to clockwise and start stepping
         Serial.println("Setting direction to CW and starting motor...");
-        stepper.set_direction(Direction::CW);
+        // stepper.set_direction(Direction::CW);
         stepper.set_steps_per_sec(steps_per_rev);
         stepper.start_stepping();
         
@@ -26,7 +26,8 @@ namespace Test {
         
         // Set direction to counter-clockwise and continue stepping
         Serial.println("Setting direction to CCW and continuing...");
-        stepper.set_direction(Direction::CCW);
+        // stepper.set_direction(Direction::CCW);
+        stepper.set_steps_per_sec(-steps_per_rev);
         stepper.start_stepping();
         
         // Wait 1 more second

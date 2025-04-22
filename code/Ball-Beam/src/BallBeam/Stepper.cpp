@@ -9,10 +9,19 @@ Stepper::Stepper(uint8_t step_pin, uint8_t dir_pin, uint16_t steps_per_rev)
         g_stepper_p = this;
       }
 
-void Stepper::set_steps_per_sec(uint32_t steps_per_sec) { steps_per_sec_ = steps_per_sec; }
+void Stepper::set_steps_per_sec(int32_t steps_per_sec) { 
+  if (steps_per_sec < 0) {
+    set_direction(Direction::CCW); 
+    steps_per_sec_ = -steps_per_sec; // Make positive
+  }
+  else {
+    set_direction(Direction::CW);
+    steps_per_sec_ = steps_per_sec;
+  }
+}
 void Stepper::set_direction(Direction direction) { direction_ = direction; }
 void Stepper::reset_step_count() { step_count_ = 0; }
-uint32_t Stepper::get_step_count() const { return step_count_; }
+int32_t Stepper::get_step_count() const { return step_count_; }
 
 
 void Stepper::start_stepping() {
@@ -22,7 +31,11 @@ void Stepper::start_stepping() {
   // Validate stepping rate before proceeding
   // steps_per_sec_ must be greater than 3 to avoid overflow in the calculation
   if (steps_per_sec_ < 3) {
+    stop_stepping();
     return;
+  }
+  if (steps_per_sec_ > MAX_STEPS_PER_SEC) {
+    steps_per_sec_ = MAX_STEPS_PER_SEC; // Cap to maximum
   }
   
   // Enable GCLK for TC3
@@ -48,8 +61,9 @@ void Stepper::start_stepping() {
   TC3->COUNT16.CC[0].reg = (uint16_t)(SystemCoreClock / 256 / steps_per_sec_ - 1);
   while (TC3->COUNT16.STATUS.bit.SYNCBUSY);
   
-  // Configure interrupt with high priority
-  NVIC_SetPriority(TC3_IRQn, 0);
+  // Configure interrupt with medium priority
+  NVIC_SetPriority(TC3_IRQn, 1); // Set priority to medium (1)
+  // NVIC_SetPriority(TC3_IRQn, 0);
   NVIC_EnableIRQ(TC3_IRQn);
   TC3->COUNT16.INTENSET.bit.MC0 = 1;
   
