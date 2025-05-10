@@ -3,8 +3,8 @@
 
 #include <Arduino.h>
 
-// 10000 steps/sec is 375 RPM at 1600 steps/rev
-const uint32_t MAX_STEPS_PER_SEC = 10000;
+// 100 steps/sec is 3.75 RPM at 1600 steps/rev
+const uint32_t MAX_STEPS_PER_SEC = 200;
 
 enum class Direction { CW, CCW };
 

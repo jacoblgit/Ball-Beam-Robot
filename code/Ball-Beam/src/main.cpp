@@ -17,7 +17,7 @@ const uint8_t DISTANCE_SENSOR_XSHUT_PIN = A1;
 const uint8_t POTENTIOMETER_PIN = A7;           // for testing
 
 // Constants
-const uint32_t LOOP_PERIOD_MS = 100;
+const uint32_t LOOP_PERIOD_MS = 25;
 const uint16_t STEPS_PER_REV = 1600; 
 const uint32_t DEBOUNCE_MS = 40;
 
@@ -29,9 +29,10 @@ enum TargetPosition {
 };
 
 const float TARGET_POSITIONS[] = {
-    50.0f,  // LEFT position in mm
-    125.0f,    // CENTER position in mm
-    200.0f    // RIGHT position in mm
+    75.0f,  // LEFT position in mm
+    // 115.0f,  // CENTER position in mm
+    125.0f,     // CENTER position in mm
+    175.0f      // RIGHT position in mm
 };
 
 // Function Declarations
@@ -50,11 +51,18 @@ Controller controller(LOOP_PERIOD_MS);
 EvtManager mgr;
 
 // Global State
-// TargetPosition currentTarget = CENTER;
-TargetPosition currentTarget = LEFT; // for testing
+TargetPosition currentTarget = CENTER;
+// TargetPosition currentTarget = LEFT; // for testing
 
-float prev_pos = 0.0f;
-float buffer[5] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // for testing
+// float prev_pos = 0.0f;
+// float prev_error = 0.0f;
+// float cum_error = 0.0f;
+// float buffer[5] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // for testing
+
+float alpha = 0.09f; // EMA filter coefficient (between 0 and 1, lower is more smoothing)
+float prev_filtered_pos = TARGET_POSITIONS[currentTarget]; // Initialize with the target position
+float prev_error = 0.0f; // Previous error for derivative calculation
+
 
 // Global Event Listeners
 EvtTimeListener timer(LOOP_PERIOD_MS, true, handleTimer);
@@ -78,31 +86,62 @@ void pin_setup() {
 
 bool handleTimer(EvtListener* listener, EvtContext* ctx) {
 
+
+
     float position = distanceSensor.get_distance();
-    // Serial.println(position); // for testing
-    float filtered_pos = position; // for testing
-    // float filtered_pos = (position + prev_pos) / 2.0f; 
-    // prev_pos = position;
-    // Serial.println(filtered_pos);
+    float filtered_pos = alpha * position + (1 - alpha) * prev_filtered_pos;
+    prev_filtered_pos = filtered_pos;
+    // float filtered_pos = position; // for testing
+
+    // Serial.print("position: ");
+    // Serial.println(position);
 
     float targetPosition = TARGET_POSITIONS[currentTarget];
     float error = targetPosition - filtered_pos;
-    Serial.print("Error: ");
-    Serial.println(error);
+    // Serial.print("Error: ");
+    // Serial.println(error);
+    Serial.print("Filtered Position: ");
+    Serial.println(filtered_pos);
+    float derror = (error - prev_error) / (LOOP_PERIOD_MS / 1000.0f); // Derivative of error
+    prev_error = error;
 
-    float kp = 0.05; // Proportional gain
-    float target_angle_deg = kp * error; // for testing
-    float target_angle_steps = target_angle_deg * STEPS_PER_REV / 360.0f;
+
+    float kp = -0.0004;     // solid 
+    float kd = -0.00028;    // pretty good
+    // float kd = -0.00032;    // pretty good
+
+
+
+
+    // float kp = -0.025;
+    // float kd = -0.07;
+    // float ki = 0;
+
+    // Serial.print("kp * error: ");
+    // Serial.println(kp * error);
+    // Serial.print("kd * derror: ");
+    // Serial.println(kd * derror);
+    // Serial.print("target_angle_deg: ");
+    // Serial.println(kp * error + kd * derror + ki * cum_error);
+
+    float target_angle_rad = kp * error + kd * derror; // + ki * cum_error; // for testing
+    float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2 * PI);
     float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
     float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
+    
+    // // stop if at target
+    // if (abs(error) <= 5.0f && abs(derror) <= 2.0f) {
+    //     stepper.stop_stepping();
+    //     return true;
+    // }
+    
     // float target_steps_per_sec = kp * error; // for testing
     // Serial.print("Target Steps/sec: ");
     // Serial.println(target_steps_per_sec);
     // float target_angle_deg = controller.compute(filtered_pos, targetPosition);
-    // float target_angle_steps = target_angle_deg * STEPS_PER_REV / 360.0f;
-    // float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
-    // float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
     
+    // Serial.print("Target Steps/sec: ");
+    // Serial.println(target_steps_per_sec, 5);
     stepper.set_steps_per_sec(target_steps_per_sec);
     stepper.start_stepping();
     
@@ -167,6 +206,8 @@ void setup() {
     mgr.addListener(&rightBtn);
     mgr.addListener(&leftLimit);
     mgr.addListener(&rightLimit);
+    delay(1000);
+    Serial.println("Setup complete.");
 }
 
 void loop() {
