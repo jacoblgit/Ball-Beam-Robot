@@ -59,10 +59,11 @@ TargetPosition currentTarget = CENTER;
 // float cum_error = 0.0f;
 // float buffer[5] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // for testing
 
-float alpha = 0.09f; // EMA filter coefficient (between 0 and 1, lower is more smoothing)
+// float alpha = 0.09f; // EMA filter coefficient (between 0 and 1, lower is more smoothing)
+float alpha = 0.08f; // EMA filter coefficient (between 0 and 1, lower is more smoothing)
 float prev_filtered_pos = TARGET_POSITIONS[currentTarget]; // Initialize with the target position
 float prev_error = 0.0f; // Previous error for derivative calculation
-
+float cum_error = 0.0f; // Cumulative error for integral calculation
 
 // Global Event Listeners
 EvtTimeListener timer(LOOP_PERIOD_MS, true, handleTimer);
@@ -100,37 +101,37 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     float error = targetPosition - filtered_pos;
     // Serial.print("Error: ");
     // Serial.println(error);
-    Serial.print("Filtered Position: ");
-    Serial.println(filtered_pos);
+    // Serial.print("Filtered Position: ");
+    // Serial.println(filtered_pos);
     float derror = (error - prev_error) / (LOOP_PERIOD_MS / 1000.0f); // Derivative of error
     prev_error = error;
+    Serial.println(error);
 
 
-    float kp = -0.0004;     // solid 
-    float kd = -0.00028;    // pretty good
-    // float kd = -0.00032;    // pretty good
+    float kp = -0.00041;     // solid 
+    float kd = -0.00028;    // best
 
+    // float kp = -0.0008;     // pretty good too 
+    // float kd = -0.00048;    // cool beans
 
+    // Serial.println(cum_error);
 
-
-    // float kp = -0.025;
-    // float kd = -0.07;
-    // float ki = 0;
 
     // Serial.print("kp * error: ");
-    // Serial.println(kp * error);
+    // Serial.println(kp * error, 5);
     // Serial.print("kd * derror: ");
     // Serial.println(kd * derror);
     // Serial.print("target_angle_deg: ");
     // Serial.println(kp * error + kd * derror + ki * cum_error);
 
+    // float target_angle_rad = kp * error + kd * derror + ki * cum_error;
     float target_angle_rad = kp * error + kd * derror; // + ki * cum_error; // for testing
     float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2 * PI);
     float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
     float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
     
     // // stop if at target
-    // if (abs(error) <= 5.0f && abs(derror) <= 2.0f) {
+    // if (abs(error) <= 5.0f && abs(derror) <= 5.0f) {
     //     stepper.stop_stepping();
     //     return true;
     // }
