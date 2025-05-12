@@ -92,29 +92,34 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     float position = distanceSensor.get_distance();
     float filtered_pos = alpha * position + (1 - alpha) * prev_filtered_pos;
     prev_filtered_pos = filtered_pos;
+    Serial.println(filtered_pos);
 
     float targetPosition = TARGET_POSITIONS[currentTarget];
     float error = targetPosition - filtered_pos;
     float derror = (error - prev_error) / (LOOP_PERIOD_MS / 1000.0f); // Derivative of error
     prev_error = error;
 
-    float kp = -0.0004;     // solid 
-    float kd = -0.00025;    // best
+    // tuning for ping pong ball
+    // float kp = -0.00040;  
+    // float kd = -0.00025;
+    
+    // tuning for steal ball
+    float kp = -0.00030;
+    float kd = 0;
 
-    float target_angle_rad = kp * error + kd * derror; // + ki * cum_error; // for testing
+    float target_angle_rad = kp * error + kd * derror;
     float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2 * PI);
     float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
     float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
     
-    // stop if at target
-    if (abs(error) <= 10.0f && abs(derror) <= 5.0f) {
-        stepper.stop_stepping();
-        return true;
-    }
+    // // stop if at target
+    // if (abs(error) <= 10.0f && abs(derror) <= 25.0f) {
+    //     stepper.stop_stepping();
+    //     return true;
+    // }
     
     stepper.set_steps_per_sec(target_steps_per_sec);
     stepper.start_stepping();
-    
     return true;
 }
 
