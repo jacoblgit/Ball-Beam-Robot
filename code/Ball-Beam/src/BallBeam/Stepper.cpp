@@ -3,11 +3,26 @@
 // Global pointer to Stepper object for interrupt handler access
 static Stepper* g_stepper_p = nullptr;
 
-Stepper::Stepper(uint8_t step_pin, uint8_t dir_pin, uint16_t steps_per_rev)
+Stepper::Stepper(
+  uint8_t step_pin, 
+  uint8_t dir_pin, 
+  uint16_t steps_per_rev, 
+  float stepper_left_limit_rad,
+  float stepper_right_limit_rad)
     : step_pin_{step_pin}, dir_pin_{dir_pin}, steps_per_rev_{steps_per_rev},
-      steps_per_sec_{0}, direction_{Direction::CW}, step_count_{0} {
+    stepper_left_limit_rad_{stepper_left_limit_rad}, stepper_right_limit_rad_{stepper_right_limit_rad}, 
+    steps_per_sec_{0}, direction_{Direction::CW}, step_count_{0}
+      {
         g_stepper_p = this;
       }
+
+void Stepper::set_rad_per_sec(float rad_per_sec) {
+  // Convert radians per second to steps per second
+  int steps_per_sec = static_cast<int32_t>(rad_per_sec * steps_per_rev_ / (2.0f * PI));
+  
+  // Set the steps per second
+  set_steps_per_sec(steps_per_sec);
+}
 
 void Stepper::set_steps_per_sec(int32_t steps_per_sec) { 
   if (steps_per_sec < 0) {
@@ -20,9 +35,24 @@ void Stepper::set_steps_per_sec(int32_t steps_per_sec) {
   }
 }
 void Stepper::set_direction(Direction direction) { direction_ = direction; }
-void Stepper::reset_step_count() { step_count_ = 0; }
+void Stepper::set_step_count(int32_t step_count) { step_count_ = step_count; }
 int32_t Stepper::get_step_count() const { return step_count_; }
 
+float Stepper::get_angle() const {
+  // Calculate angle in radians based on step count and steps per revolution
+  float angle = (step_count_ % steps_per_rev_) * (2.0f * PI / steps_per_rev_);
+  return angle;
+}
+
+void Stepper::single_step() {
+  digitalWrite(dir_pin_, direction_ == Direction::CW ? HIGH : LOW);
+  
+  // Generate a single step pulse
+  digitalWrite(step_pin_, HIGH);
+  delayMicroseconds(10); // Pulse width
+  digitalWrite(step_pin_, LOW);
+  delayMicroseconds(10); // Delay between steps
+}
 
 void Stepper::start_stepping() {
   // Configure direction pin according to current direction setting
