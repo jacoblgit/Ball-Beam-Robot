@@ -24,10 +24,8 @@ const float    STEPPER_LEFT_LIMIT_RAD = -0.293; // -16.8 degrees
 const float    STEPPER_RIGHT_LIMIT_RAD = 0.293; //  16.8 degrees
 
 const float g = 9.8;                       // acceleration due to gravity (m/s^2)
-// const float m = 0.0028;                     // mass of ping pong ball      (kg)
-// const float r = 0.02015;                    // radius of ping pong ball    (m)
-// const float Ib = (2.0f/3.0f) * m * r * r;   // moment of inertia of ping pong ball (kg*m^2)
-const float c_inertia = 2.0f / 3.0f;        // inertia constant for ball
+// const float c_inertia = 2.0f / 3.0f;        // inertia constant for ping pong ball
+const float c_inertia = 2.0f / 5.0f;            // inertia constant for steel ball
 // const float tc = 8;                             // BEST (old wrong way)
 const float tc = 1;                         // BEST (new way)      
 // const float tc = 0.5;                         // test (new way)      
@@ -98,49 +96,31 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     float position = distanceSensor.get_distance() * 0.001;                     // in meters
     float filtered_pos = alpha * position + (1 - alpha) * prev_filtered_pos;    // smoothing
     prev_filtered_pos = filtered_pos;
-    // Serial.println(filtered_pos);
+    Serial.println(filtered_pos*100, 1);
 
     float targetPosition = TARGET_POSITIONS[currentTarget];
     float error = targetPosition - filtered_pos;
-    Serial.print("error: ");
-    Serial.println(error, 4);
+    // Serial.print("error: ");
+    // Serial.println(error, 4);
 
     // get derivative of error
     float derror = (error - prev_error) / (LOOP_PERIOD_MS * 0.001f);            // derivative of error (meters/sec)
     prev_error = error;
-    Serial.print("derror: ");
-    Serial.println(derror, 4);
+    // Serial.print("derror: ");
+    // Serial.println(derror, 4);
 
-    // float adjustment = 1.10f;                         // damping factor is proportional to kd. use adjustment to make damping factor 1 (BEST)
-    // float adjustment = 1.25f;                         // damping factor is proportional to kd. use adjustment to make damping factor 1 (testing)
-    float adjustment = 1.0f;                         // damping factor is proportional to kd. use adjustment to make damping factor 1 (testing)
-    // float adjustment = 0.95;
+    float kd_adjustment = 1.0f;                         // damping factor is proportional to kd. use adjustment to make damping factor 1 (BEST)
+    float kp_adjustment = 1.0f;                         // tc is inversely proportional to kp
 
-    // float kp = -1 * (1 + c_inertia) / (g * tc);    // proportional gain
-    // float kd = -1 * (2 / tc);                                   // derivative gain
     // Serial.print("kp: ");
     // Serial.println(kp, 4);  
     // Serial.print("kd: ");
     // Serial.println(kd, 4);
-    float kd = (-1 * 2 * (1 + c_inertia) / (g * tc)) * adjustment;     // derivative gain
-    float kp = -1 * (1 + c_inertia) / (g * tc * tc);    // proportional gain
+    float kd = (-1 * 2 * (1 + c_inertia) / (g * tc)) * kd_adjustment;     // derivative gain
+    float kp = (-1 * (1 + c_inertia) / (g * tc * tc)) * kp_adjustment;    // proportional gain
     float target_angle_rad = kp * error + kd * derror; // in radians
     // Serial.print("target angle: ");
     // Serial.println(target_angle_rad * 180 / PI, 2);
-
-
-    // get current angle
-    // float theta = stepper.get_angle();                                          // in radians
-
-    // set target angular velocity
-    // float c1 = (1+ c_inertia) / (g * tc * tc);
-    // float c2 = (2 / tc);
-    // float theta_dot =  -1 * c1 * derror  - c2 * theta;                                // in radians/s
-    // Serial.println(theta_dot * 180 / PI, 2);
-
-    // stepper.set_rad_per_sec(theta_dot);                                         // set stepper speed
-    // stepper.start_stepping();
-
 
     // tuning for ping pong ball
     // float kp = -0.00040;  
@@ -150,13 +130,12 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     // float kp = -0.00030;
     // float kd = 0;
 
-    // float target_angle_rad = kp * error + kd * derror;
-    float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2 * PI);
+    float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2.0 * PI);
     float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
     float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
-    Serial.print("target steps/sec: ");
-    Serial.println(target_steps_per_sec, 2);
-    Serial.println();
+    // Serial.print("target steps/sec: ");
+    // Serial.println(target_steps_per_sec, 2);
+    // Serial.println();
 
     // // stop if at target
     // if (abs(error) <= 10.0f && abs(derror) <= 25.0f) {
