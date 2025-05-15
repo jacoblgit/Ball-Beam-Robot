@@ -4,7 +4,9 @@
 #include <Arduino.h>
 
 // 100 steps/sec is 3.75 RPM at 1600 steps/rev
-const uint32_t MAX_STEPS_PER_SEC = 400;
+const uint32_t MAX_STEPS_PER_SEC = 100;
+// const uint32_t MAX_STEPS_PER_SEC = 50;
+
 
 enum class Direction { CW, CCW };
 
