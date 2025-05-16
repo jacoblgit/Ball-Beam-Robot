@@ -5,30 +5,35 @@
 #include "BallBeam/Stepper.hpp"
 #include "BallBeam/Test.hpp"
 
+
 // Pin Definitions
-// const uint8_t LEFT_BUTTON_PIN = 2;  
-// const uint8_t CENTER_BUTTON_PIN = 3;
-// const uint8_t RIGHT_BUTTON_PIN = 4;
-// const uint8_t RIGHT_LIMIT_PIN = 5;
-const uint8_t LEFT_LIMIT_PIN = 6;
+const uint8_t LEFT_BUTTON_PIN = 4;  
+const uint8_t CENTER_BUTTON_PIN = 3;
+const uint8_t RIGHT_BUTTON_PIN = 2;
+const uint8_t LEFT_BUTTON_LED = 15;
+const uint8_t CENTER_BUTTON_LED = 16;
+const uint8_t RIGHT_BUTTON_LED = 17;
+
+const uint8_t LEFT_LIMIT_PIN = 5;
+const uint8_t RIGHT_LIMIT_PIN = 6;
+
 const uint8_t STEPPER_STEP_PIN = 8;
 const uint8_t STEPPER_DIR_PIN = 9;
+
 const uint8_t DISTANCE_SENSOR_XSHUT_PIN = A1;
-// const uint8_t POTENTIOMETER_PIN = A7;           // for testing
+
 
 // Constants
 const uint32_t LOOP_PERIOD_MS = 25;
 const uint16_t STEPS_PER_REV = 1600; 
 const uint32_t DEBOUNCE_MS = 70;
-const float    STEPPER_RIGHT_LIMIT_RAD = 0.22;   //  16.8 degrees
-const float    STEPPER_LEFT_LIMIT_RAD = -1 * STEPPER_RIGHT_LIMIT_RAD;   // -16.8 degrees
+const float    STEPPER_RIGHT_LIMIT_RAD = 0.22;   //  12.6 degrees
+const float    STEPPER_LEFT_LIMIT_RAD = -1 * STEPPER_RIGHT_LIMIT_RAD;   // -12.6 degrees
 
-const float g = 9.8;                       // acceleration due to gravity (m/s^2)
-// const float c_inertia = 2.0f / 3.0f;        // inertia constant for ping pong ball
-const float c_inertia = 2.0f / 5.0f;            // inertia constant for steel ball
-// const float tc = 8;                             // BEST (old wrong way)
-const float tc = 1;                         // BEST (new way)      
-// const float tc = 0.5;                         // test (new way)      
+const float g = 9.8;                        // acceleration due to gravity (m/s^2)
+// const float c_inertia = 2.0f / 3.0f;     // inertia constant for ping pong ball
+const float c_inertia = 2.0f / 5.0f;        // inertia constant for steel ball
+const float tc = 1;                         // time constant (seconds) for the system      
 
 
 // Target position enum and mapping to actual positions
@@ -45,14 +50,18 @@ const float TARGET_POSITIONS[] = {
     0.175f      // RIGHT position
 };
 
+
 // Function Declarations
 void pin_setup();
 bool handleTimer(EvtListener* listener, EvtContext* ctx);
-// bool handleLeftButton(EvtListener* listener, EvtContext* ctx);
-// bool handleCenterButton(EvtListener* listener, EvtContext* ctx);
-// bool handleRightButton(EvtListener* listener, EvtContext* ctx);
+
+bool handleLeftButton(EvtListener* listener, EvtContext* ctx);
+bool handleCenterButton(EvtListener* listener, EvtContext* ctx);
+bool handleRightButton(EvtListener* listener, EvtContext* ctx);
+
 bool handleLeftLimit(EvtListener* listener, EvtContext* ctx);
-// bool handleRightLimit(EvtListener* listener, EvtContext* ctx);
+bool handleRightLimit(EvtListener* listener, EvtContext* ctx);
+
 
 // Global Components
 Stepper stepper(STEPPER_STEP_PIN, STEPPER_DIR_PIN,
@@ -68,26 +77,37 @@ TargetPosition currentTarget = CENTER;
 float alpha = 0.08f; // EMA filter coefficient (between 0 and 1, lower is more smoothing)
 float prev_filtered_pos; //= TARGET_POSITIONS[currentTarget]; // Initialize with the target position
 float prev_error; //= 0.0f; // Previous error for derivative calculation
-// float cum_error = 0.0f; // Cumulative error for integral calculation
+
 
 // Global Event Listeners
 EvtTimeListener timer(LOOP_PERIOD_MS, true, handleTimer);
-// EvtPinListener leftBtn(LEFT_BUTTON_PIN, DEBOUNCE_MS, LOW, handleLeftButton);
-// EvtPinListener centerBtn(CENTER_BUTTON_PIN, DEBOUNCE_MS, LOW, handleCenterButton);
-// EvtPinListener rightBtn(RIGHT_BUTTON_PIN, DEBOUNCE_MS, LOW, handleRightButton);
-EvtPinListener leftLimit(LEFT_LIMIT_PIN, DEBOUNCE_MS, HIGH, handleLeftLimit);
-// EvtPinListener rightLimit(RIGHT_LIMIT_PIN, DEBOUNCE_MS, HIGH, handleRightLimit);
+
+EvtPinListener leftBtn(LEFT_BUTTON_PIN,     DEBOUNCE_MS, LOW,   handleLeftButton);
+EvtPinListener centerBtn(CENTER_BUTTON_PIN, DEBOUNCE_MS, LOW,   handleCenterButton);
+EvtPinListener rightBtn(RIGHT_BUTTON_PIN,   DEBOUNCE_MS, LOW,   handleRightButton);
+
+EvtPinListener leftLimit(LEFT_LIMIT_PIN,    DEBOUNCE_MS, HIGH,  handleLeftLimit);
+EvtPinListener rightLimit(RIGHT_LIMIT_PIN,  DEBOUNCE_MS, HIGH,  handleRightLimit);
 
 // Function Implementations
 void pin_setup() {
-    // pinMode(LEFT_BUTTON_PIN, INPUT_PULLUP);
-    // pinMode(CENTER_BUTTON_PIN, INPUT_PULLUP);
-    // pinMode(RIGHT_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(LEFT_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(CENTER_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(RIGHT_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(LEFT_BUTTON_LED, OUTPUT);
+    pinMode(CENTER_BUTTON_LED, OUTPUT);
+    pinMode(RIGHT_BUTTON_LED, OUTPUT);
     pinMode(LEFT_LIMIT_PIN, INPUT_PULLUP);
-    // pinMode(RIGHT_LIMIT_PIN, INPUT_PULLUP);
+    pinMode(RIGHT_LIMIT_PIN, INPUT_PULLUP);
     pinMode(STEPPER_STEP_PIN, OUTPUT);
     pinMode(STEPPER_DIR_PIN, OUTPUT);
-    // pinMode(POTENTIOMETER_PIN, INPUT); 
+
+    // set initial states
+    digitalWrite(LEFT_BUTTON_LED, LOW);
+    digitalWrite(CENTER_BUTTON_LED, HIGH);
+    digitalWrite(RIGHT_BUTTON_LED, LOW);
+    // digitalWrite(STEPPER_STEP_PIN, LOW);
+    // digitalWrite(STEPPER_DIR_PIN, LOW);
 }
 
 bool handleTimer(EvtListener* listener, EvtContext* ctx) {
@@ -123,14 +143,6 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     // Serial.print("target angle: ");
     Serial.println(target_angle_rad * 180 / PI, 2);
 
-    // tuning for ping pong ball
-    // float kp = -0.00040;  
-    // float kd = -0.00025;
-    
-    // tuning for steal ball
-    // float kp = -0.00030;
-    // float kd = 0;
-
     float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2.0 * PI);
     float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
     float target_steps_per_sec = (target_angle_steps - curr_angle_steps) / (LOOP_PERIOD_MS / 1000.0f);
@@ -149,20 +161,38 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     return true;
 }
 
-// bool handleLeftButton(EvtListener* listener, EvtContext* ctx) {
-//     currentTarget = LEFT;
-//     return true;
-// }
+bool handleLeftButton(EvtListener* listener, EvtContext* ctx) {
+    Serial.println("Left button pressed");
+    
+    digitalWrite(LEFT_BUTTON_LED, HIGH); // turn on LED
+    digitalWrite(CENTER_BUTTON_LED, LOW);
+    digitalWrite(RIGHT_BUTTON_LED, LOW); 
 
-// bool handleCenterButton(EvtListener* listener, EvtContext* ctx) {
-//     currentTarget = CENTER;
-//     return true;
-// }
+    currentTarget = LEFT;
+    return true;
+}
 
-// bool handleRightButton(EvtListener* listener, EvtContext* ctx) {
-//     currentTarget = RIGHT;
-//     return true;
-// }
+bool handleCenterButton(EvtListener* listener, EvtContext* ctx) {
+    Serial.println("Center button pressed");
+
+    digitalWrite(LEFT_BUTTON_LED, LOW);
+    digitalWrite(CENTER_BUTTON_LED, HIGH); // turn on LED
+    digitalWrite(RIGHT_BUTTON_LED, LOW);
+    
+    currentTarget = CENTER;
+    return true;
+}
+
+bool handleRightButton(EvtListener* listener, EvtContext* ctx) {
+    Serial.println("Right button pressed");
+
+    digitalWrite(LEFT_BUTTON_LED, LOW);
+    digitalWrite(CENTER_BUTTON_LED, LOW);
+    digitalWrite(RIGHT_BUTTON_LED, HIGH); // turn on LED
+    
+    currentTarget = RIGHT;
+    return true;
+}
 
 bool handleLeftLimit(EvtListener* listener, EvtContext* ctx) {
     stepper.stop_stepping();
@@ -171,12 +201,12 @@ bool handleLeftLimit(EvtListener* listener, EvtContext* ctx) {
     return true;
 }
 
-// bool handleRightLimit(EvtListener* listener, EvtContext* ctx) {
-//     stepper.stop_stepping();
-//     Serial.println("Right limit reached");
-//     while (true) { delay(1000);} // stop program
-//     return true;
-// }
+bool handleRightLimit(EvtListener* listener, EvtContext* ctx) {
+    stepper.stop_stepping();
+    Serial.println("Right limit reached");
+    while (true) { delay(1000);} // stop program
+    return true;
+}
 
 void calibrate_stepper() {
     // runs track up against the right limit switch
@@ -201,15 +231,16 @@ void setup() {
     }
     Serial.println("hello world");
     pin_setup();
-    distanceSensor.initialize(); // Initialize the distance sensor (maybe put in check on distance sensor first measurement)
-    mgr.addListener(&timer);
-    // mgr.addListener(&leftBtn);
-    // mgr.addListener(&centerBtn);
-    // mgr.addListener(&rightBtn);
+    // distanceSensor.initialize(); // Initialize the distance sensor (maybe put in check on distance sensor first measurement)
+    
+    // mgr.addListener(&timer);
+    mgr.addListener(&leftBtn);
+    mgr.addListener(&centerBtn);
+    mgr.addListener(&rightBtn);
     mgr.addListener(&leftLimit);
-    // mgr.addListener(&rightLimit);
+    mgr.addListener(&rightLimit);
 
-    calibrate_stepper();
+    // calibrate_stepper();
 
     Serial.println("Setup complete.");
     delay(1000);
