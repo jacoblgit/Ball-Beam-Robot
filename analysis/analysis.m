@@ -9,6 +9,7 @@ g = 9.8;                        % gravitational acceleration (m/s^2)
 alpha = 1;                      % time constant (sec)
 
 kp = (1+c)/(g*alpha^2);
+ki = 0;
 kd = 2*(1+c)/(g*alpha);
 %% System Parameters
 g = 9.8;                        % gravitational acceleration (m/s^2)
@@ -29,61 +30,9 @@ pzplot(P)
 
 %% Control (PID)
 
-% pidTuner(P);
-Kp = -0.147;
-Ki = 0;
-Kd = -0.309;
 C = pid(Kp, Ki, Kd);                % controller
 G = feedback(C*P, 1);               % X(s)/R(s), closed loop TF
 
 t = 0:0.01:10;                      % 1 sec
 step_amplitude = 0.10;              % 1 cm
 step(step_amplitude*G, t)
-
-%% Testing
-
-% Testing how well output follow control signal
-t = 0:0.01:5;
-r = 0.05*sin(10*t);                 % reference signal (5cm amplitude, 10Hz)
-x = lsim(G, r, t);                  % output
-
-plot(t, x, 'r-')
-hold on;
-plot(t, r, 'b-')
-hold off;
-
-% Enhancing the plot
-title('System Response to Control Signal');
-xlabel('Time (s)');
-ylabel('Amplitude');
-legend({'Output (y)', 'Reference Signal (r)'});
-grid on; % Add grid lines
-
-% The PID controlled system follows the control signal well
-
-%% Mechanical Design Requirements
-
-% What range of angles does the track need to be able to swing through?
-
-H = C / (1 + C*P);                            % Theta(s) / R(s), TF
-
-t = 0:0.01:5;
-r = 0.05*sin(10*t);                 % reference signal (5cm amplitude, 10Hz)
-u = lsim(H, r, t);                  % theta
-
-plot(t, u, 'r-')
-hold on;
-plot(t, r, 'b-')
-hold off;
-
-% Enhancing the plot
-title('System Response to Control Signal');
-xlabel('Time (s)');
-ylabel('Theta');
-legend({'Theta (u)', 'Reference Signal (r)'});
-grid on; % Add grid lines
-
-%% Scratchpad
-
-% pzmap(G)
-% pidTuner(P)
