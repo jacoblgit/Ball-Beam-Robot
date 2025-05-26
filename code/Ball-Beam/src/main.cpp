@@ -36,7 +36,6 @@ const float g = 9.8;                        // acceleration due to gravity (m/s^
 const float c_inertia = 2.0f / 3.0f;     // inertia constant for ping pong ball
 // const float c_inertia = 2.0f / 5.0f;        // inertia constant for steel ball
 const float tc = 1;                        // time constant (seconds) for the system (BEST)
-// const float tc = 0.75f;
 
 // Target position enum and mapping to actual positions
 enum TargetPosition {
@@ -75,10 +74,9 @@ EvtManager mgr;
 // Global State
 TargetPosition currentTarget = CENTER;
 
-float alpha = 0.09f; // EMA filter coefficient (between 0 and 1, lower is more smoothing, higher is more responsive)
-// float alpha = 0.085f; // EMA filter coefficient (between 0 and 1, lower is more smoothing)
-float prev_filtered_pos; //= TARGET_POSITIONS[currentTarget]; // Initialize with the target position
-float prev_error; //= 0.0f; // Previous error for derivative calculation
+float alpha = 0.09f;        // Exponential moving average filter strength (between 0 and 1; lower: more smooth, higher: more responsive)
+float prev_filtered_pos;
+float prev_error;           // Previous error for derivative calculation
 
 
 // Global Event Listeners
@@ -119,12 +117,12 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     float derror = (error - prev_error) / (LOOP_PERIOD_MS * 0.001f);            // derivative of error (meters/sec)
     prev_error = error;
     
-    float kd_adjustment = 1;                         // damping factor is proportional to kd. use adjustment to make damping factor 1 (BEST)
-    float kp_adjustment = 1.0f;                         // tc is inversely proportional to kp
+    float kd_adjustment = 1;            // damping factor is proportional to kd. use adjustment to make damping factor 1
+    float kp_adjustment = 1.0f;         // tc is inversely proportional to kp
     
-    float kd = (2 * (1 + c_inertia) / (g * tc)) *       kd_adjustment;     // derivative gain
-    float kp = (1 * (1 + c_inertia) / (g * tc * tc)) *  kp_adjustment;    // proportional gain
-    float target_angle_rad = kp * error + kd * derror; // in radians
+    float kd = (2 * (1 + c_inertia) / (g * tc)) *       kd_adjustment;      // derivative gain
+    float kp = (1 * (1 + c_inertia) / (g * tc * tc)) *  kp_adjustment;      // proportional gain
+    float target_angle_rad = kp * error + kd * derror;                      // in radians
     
     float target_angle_steps = target_angle_rad * STEPS_PER_REV / (2.0 * PI);
     float curr_angle_steps = stepper.get_step_count() % STEPS_PER_REV;
@@ -147,12 +145,6 @@ bool handleTimer(EvtListener* listener, EvtContext* ctx) {
     // Serial.println(target_steps_per_sec, 2);
     // Serial.println();
     #endif
-
-    // // stop if at target
-    // if (abs(error) <= 10.0f && abs(derror) <= 25.0f) {
-    //     stepper.stop_stepping();
-    //     return true;
-    // }
     
     stepper.set_steps_per_sec(target_steps_per_sec);
     stepper.start_stepping();
@@ -220,7 +212,7 @@ bool handleRightLimit(EvtListener* listener, EvtContext* ctx) {
 
 void calibrate_stepper() {
     // runs track up against the right limit switch
-    // requires correct STEPPER_RIGHT_LIMIT_RAD value
+    // requires correct STEPPER_LEFT_LIMIT_RAD value
     stepper.set_direction(Direction::CCW);
     while(!digitalRead(LEFT_LIMIT_PIN)) {
         stepper.single_step();
