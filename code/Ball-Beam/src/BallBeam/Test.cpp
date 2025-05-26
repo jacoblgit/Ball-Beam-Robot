@@ -1,6 +1,8 @@
 #include "test.hpp"
 
 namespace Test {
+    // Run with:
+    // Test::test_stepper(stepper, STEPS_PER_REV);
     void test_stepper(Stepper& stepper, uint16_t steps_per_rev) {
         Serial.println("Starting stepper motor test...");
         

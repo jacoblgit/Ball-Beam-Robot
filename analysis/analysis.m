@@ -1,7 +1,15 @@
 % Ball on Track Analysis
 % Jacob Lessing
 % 2 January 2025
+%% New System Model
+m = 2.8 * 10^-3;                % mass of ball (kg)
+c = 2/5;                        % solid steel ball
+Ip = 1.8 * 10^-4;               % moment of inertia of track (kg*m^2)
+g = 9.8;                        % gravitational acceleration (m/s^2)
+alpha = 1;                      % time constant (sec)
 
+kp = (1+c)/(g*alpha^2);
+kd = 2*(1+c)/(g*alpha);
 %% System Parameters
 g = 9.8;                        % gravitational acceleration (m/s^2)
 
